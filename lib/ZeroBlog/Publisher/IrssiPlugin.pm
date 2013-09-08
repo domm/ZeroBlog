@@ -15,7 +15,7 @@ use Irssi qw(
     active_win
 );
 use Exporter qw(import);
-our @EXPORT = qw(config);
+our @EXPORT = qw(config zero_blog);
 our $VERSION = '0.01';
 our %IRSSI = (
     authors     => 'Thomas Klausner',
@@ -28,6 +28,8 @@ my @settings = qw(secret address);
 foreach (@settings) {
     settings_add_str('zeroblog','zeroblog_'.$_,'');
 }
+#settings_add_str('zeroblog','zeroblog_secret','abc');
+#settings_add_str('zeroblog','zeroblog_address','tcp://localhost:3333');
 
 sub config {
     my ($data, $server, $witem) = @_;
@@ -35,16 +37,59 @@ sub config {
 
     if ($key && $value) {
         settings_set_str('zeroblog_'.$key, $value);
-        active_win()->print("set $key to >".settings_get_str('zeroblog_'.$key)."<");
+        active_win->print("set $key to >".settings_get_str('zeroblog_'.$key)."<");
     }
     elsif ($key) {
-        active_win()->print("$key is >".settings_get_str('zeroblog_'.$key)."<");
+        active_win->print("$key is >".settings_get_str('zeroblog_'.$key)."<");
     }
     else {
         foreach my $thiskey (@settings) {
-            active_win()->print("$thiskey is >".settings_get_str('zeroblog_'.$thiskey)."<");
+            active_win->print("$thiskey is >".settings_get_str('zeroblog_'.$thiskey)."<");
         }
     }
+}
+
+my $SOCKET;
+sub get_socket {
+    return $SOCKET if $SOCKET;
+    my $address = settings_get_str('zeroblog_address');
+    unless ($address) {
+        active_win->print("Please set Broker address via /zb_config address ADDRESS");
+        return;
+    }
+    $SOCKET = ZMQx::Class->socket('REQ', connect => $address);
+    return $SOCKET;
+}
+
+sub zero_blog {
+    my ($data, $server, $witem) = @_;
+
+    my $secret = settings_get_str('zeroblog_secret');
+    unless ($secret) {
+        active_win->print("Please set secret via /zb_config secret SECRET");
+        return;
+    }
+    my $socket = get_socket();
+    return unless $socket;
+    my $command = 'SAY';
+    my $message = $data;
+    if ($data =~m{^/me }) {
+        $command = 'ME';
+        $message =~s{^/me}{domm};
+        $data =~s{^/me }{};
+    }
+    $message =~ s/\s+$//;
+    my $token = sha1_hex($message,$secret);
+
+    $socket->send([$token, $message]);
+    my $rv = $socket->receive(1);
+
+    if ($witem) {
+        $witem->command("/$command $data");
+    } else {
+        active_win->print($data);
+    }
+    active_win->print(join(' ',@$rv));
 }
 
 1;
