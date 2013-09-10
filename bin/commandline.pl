@@ -4,12 +4,14 @@ use FindBin;
 use local::lib "$FindBin::Bin/../local";
 use lib "$FindBin::Bin/../lib";
 use 5.014;
-use ZMQx::Class;
+use ZeroBlog::Publisher;
 
-my $client = ZMQx::Class->socket( 'REQ', connect => 'tcp://localhost:3333' );
-$client->send(['abc',$ARGV[0]]);
-my $rv = $client->receive(1);
-say join(',',@$rv);
+# TODO getopt
+my $endpoint = shift(@ARGV);
+my $secret = shift(@ARGV);
 
-
-
+my $client = ZeroBlog::Publisher->new(
+    endpoint => $endpoint,
+    secret => $secret,
+);
+say $client->send(join(' ',@ARGV));

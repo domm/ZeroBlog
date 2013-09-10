@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use ZMQx::Class;
-use Digest::SHA1 qw(sha1_hex);
 use Irssi qw(
     window_find_name command_bind
     settings_add_str settings_get_str  settings_set_str
