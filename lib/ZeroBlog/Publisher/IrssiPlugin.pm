@@ -25,10 +25,10 @@ our %IRSSI = (
 
 my @settings = qw(secret endpoint);
 foreach (@settings) {
-    settings_add_str('zeroblog','zeroblog_'.$_,'');
+#    unless (settings_get_str('zeroblog_'.$_)) {
+        Irssi::settings_add_str('zeroblog','zeroblog_'.$_,'');
+#    }
 }
-settings_add_str('zeroblog','zeroblog_secret','abc');
-settings_add_str('zeroblog','zeroblog_endpoint','tcp://localhost:3333');
 
 my $PUBLISHER;
 sub get_publisher {
