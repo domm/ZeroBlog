@@ -26,10 +26,14 @@ sub send {
 
     $socket->send([$token, $message]);
     my $rv = $socket->receive(1);
-
     if ($rv) {
-        if (ref($rv) eq 'ARRAY' && $rv->[0] eq 'ok') {
-            return 1;
+        if (ref($rv) eq 'ARRAY') {
+            if ($rv->[0] eq 'ok') {
+                return 1;
+            }
+            else {
+                die $rv->[0];
+            }
         }
         else {
             die $rv;
