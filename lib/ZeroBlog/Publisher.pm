@@ -24,23 +24,16 @@ sub send {
     $message =~ s/\s+$//;
     my $token = sha1_hex($message,$self->secret);
 
-    $socket->send([$token, $message]);
-    my $rv = $socket->receive(1);
-    if ($rv) {
-        if (ref($rv) eq 'ARRAY') {
-            if ($rv->[0] eq 'ok') {
-                return 1;
-            }
-            else {
-                die $rv->[0];
-            }
-        }
-        else {
-            die $rv;
-        }
+    my $rv;
+    eval {
+        $socket->send([$token, $message]);
+        $rv = $socket->receive(1);
+    };
+    if ($@ || !$rv) {
+        return ('error', $@ || 'connection timeout' );
     }
     else {
-        die "could not connect";
+        return $rv->[0], '';
     }
 }
 

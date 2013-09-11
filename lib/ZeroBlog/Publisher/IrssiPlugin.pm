@@ -84,16 +84,16 @@ sub zero_blog {
         $data =~s{^/me }{};
     }
 
-    eval {
-        $publisher->send($message);
+    my ($status, $error) = $publisher->send($message);
+    if ($status eq 'ok') {
         if ($witem) {
             $witem->command("/$command $data");
         } else {
             active_win->print($data);
         }
-    };
-    if ($@) {
-        active_win->print("could not zeroblog: $@");
+    }
+    else {
+        active_win->print("could not zeroblog: $status $error");
     }
 }
 
