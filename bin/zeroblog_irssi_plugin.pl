@@ -1,8 +1,9 @@
 use strict;
 use warnings;
 use FindBin;
-use local::lib "$FindBin::Bin/../local";
-use lib "$FindBin::Bin/../lib";
+
+use local::lib "/home/domm/perl/ZeroBlog/local";
+use lib "/home/domm/perl/ZeroBlog/lib";
 
 use ZeroBlog::Publisher::IrssiPlugin;
 
