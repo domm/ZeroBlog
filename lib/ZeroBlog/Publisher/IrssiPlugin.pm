@@ -2,8 +2,8 @@ package ZeroBlog::Publisher::IrssiPlugin;
 use 5.014;
 use strict;
 use warnings;
+use ZeroBlog::Publisher;
 
-use ZMQx::Class;
 use Irssi qw(
     window_find_name command_bind
     settings_add_str settings_get_str  settings_set_str
@@ -23,12 +23,33 @@ our %IRSSI = (
     description => q{We don't need twitter!},
 );
 
-my @settings = qw(secret address);
+my @settings = qw(secret endpoint);
 foreach (@settings) {
     settings_add_str('zeroblog','zeroblog_'.$_,'');
 }
-#settings_add_str('zeroblog','zeroblog_secret','abc');
-#settings_add_str('zeroblog','zeroblog_address','tcp://localhost:3333');
+settings_add_str('zeroblog','zeroblog_secret','abc');
+settings_add_str('zeroblog','zeroblog_endpoint','tcp://localhost:3333');
+
+my $PUBLISHER;
+sub get_publisher {
+    return $PUBLISHER if $PUBLISHER;
+    my $endpoint = settings_get_str('zeroblog_endpoint');
+    unless ($endpoint) {
+        active_win->print("Please set Broker endpoint via /zb_config endpoint ENDPOINT");
+        return;
+    }
+    my $secret = settings_get_str('zeroblog_secret');
+    unless ($secret) {
+        active_win->print("Please set secret via /zb_config secret SECRET");
+        return;
+    }
+
+    $PUBLISHER = ZeroBlog::Publisher->new(
+        endpoint=>$endpoint,
+        secret=>$secret,
+    );
+    return $PUBLISHER;
+}
 
 sub config {
     my ($data, $server, $witem) = @_;
@@ -37,6 +58,7 @@ sub config {
     if ($key && $value) {
         settings_set_str('zeroblog_'.$key, $value);
         active_win->print("set $key to >".settings_get_str('zeroblog_'.$key)."<");
+        undef $PUBLISHER;
     }
     elsif ($key) {
         active_win->print("$key is >".settings_get_str('zeroblog_'.$key)."<");
@@ -48,28 +70,12 @@ sub config {
     }
 }
 
-my $SOCKET;
-sub get_socket {
-    return $SOCKET if $SOCKET;
-    my $address = settings_get_str('zeroblog_address');
-    unless ($address) {
-        active_win->print("Please set Broker address via /zb_config address ADDRESS");
-        return;
-    }
-    $SOCKET = ZMQx::Class->socket('REQ', connect => $address);
-    return $SOCKET;
-}
 
 sub zero_blog {
     my ($data, $server, $witem) = @_;
 
-    my $secret = settings_get_str('zeroblog_secret');
-    unless ($secret) {
-        active_win->print("Please set secret via /zb_config secret SECRET");
-        return;
-    }
-    my $socket = get_socket();
-    return unless $socket;
+    my $publisher = get_publisher();
+    return unless $publisher;
     my $command = 'SAY';
     my $message = $data;
     if ($data =~m{^/me }) {
@@ -77,18 +83,18 @@ sub zero_blog {
         $message =~s{^/me}{domm};
         $data =~s{^/me }{};
     }
-    $message =~ s/\s+$//;
-    my $token = sha1_hex($message,$secret);
 
-    $socket->send([$token, $message]);
-    my $rv = $socket->receive(1);
-
-    if ($witem) {
-        $witem->command("/$command $data");
-    } else {
-        active_win->print($data);
+    eval {
+        $publisher->send($message);
+        if ($witem) {
+            $witem->command("/$command $data");
+        } else {
+            active_win->print($data);
+        }
+    };
+    if ($@) {
+        active_win->print("could not zeroblog: $@");
     }
-    active_win->print(join(' ',@$rv));
 }
 
 1;
