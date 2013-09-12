@@ -19,11 +19,12 @@ sub _build_requestor {
 
 sub send {
     my ($self, $message) = @_;
-    my $socket = $self->requestor;
 
     $message =~ s/\s+$//;
+    return 'error','no message' unless $message;
     my $token = sha1_hex($message,$self->secret);
 
+    my $socket = $self->requestor;
     my $rv;
     eval {
         $socket->send([$token, $message]);

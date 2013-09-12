@@ -70,7 +70,6 @@ sub config {
     }
 }
 
-
 sub zero_blog {
     my ($data, $server, $witem) = @_;
 
