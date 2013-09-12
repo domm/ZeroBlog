@@ -11,6 +11,7 @@ extends 'ZeroBlog::Publisher';
 with 'MooseX::Getopt';
 
 my $client = __PACKAGE__->new_with_options;
-$client->send(join(' ',@{$client->extra_argv}));
+my ($status, $error) = $client->send(join(' ',@{$client->extra_argv}));
+say "$status $error";
 
 1;
