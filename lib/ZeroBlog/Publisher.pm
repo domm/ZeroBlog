@@ -4,8 +4,6 @@ use Moose;
 use ZMQx::Class;
 use Digest::SHA1 qw(sha1_hex);
 
-use ZMQ::Constants qw(:all);
-
 has 'secret' => (is=>'ro',isa=>'Str',required=>1);
 has 'endpoint' => (is=>'ro',isa=>'Str',required=>1);
 has 'requestor' => (is=>'ro',isa=>'ZMQx::Class::Socket',lazy_build=>1,required=>1);
