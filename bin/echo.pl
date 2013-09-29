@@ -1,16 +1,20 @@
+package Echo;
+use strict;
+use warnings;
+use FindBin;
+use local::lib "$FindBin::Bin/../local";
+use lib "$FindBin::Bin/../lib";
 use 5.014;
+
 use Moose;
-use ZMQx::Class;
-use AnyEvent;
+extends 'ZeroBlog::Subscriber';
+with 'MooseX::Getopt';
 
-my $pub = ZMQx::Class->socket( 'SUB', connect => 'tcp://localhost:3334' );
-$pub->subscribe('');
-
-    my $watcher = $pub->anyevent_watcher( sub {
-        while ( my $msg = $pub->receive ) {
-            say "got ".join(' - ',@$msg);
-        }
-    });
-    AnyEvent->condvar->recv;
+my $echo = __PACKAGE__->new_with_options;
+$echo->run(
+    sub {
+        my ( $self, $msg ) = @_;
+        say "domm microblogged something: " . $msg->[0];
+    } );
 
 1;
